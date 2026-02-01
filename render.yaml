@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: potatomail
+    env: python
+    plan: free
+    buildCommand: uv sync
+    startCommand: uv run python run.py
