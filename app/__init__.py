@@ -1,8 +1,6 @@
 from flask import Flask
 from dotenv import load_dotenv, find_dotenv
 
-
-
 # ensure we load the project's .env reliably
 load_dotenv(find_dotenv(), override=True)
 
@@ -14,7 +12,7 @@ def create_app(config_object: str = "app.config.Config") -> Flask:
 
     @app.route("/")
     def index():
-        print(app.config.get("SECRET_KEY")) ## only for test  
+        print(app.config.get("SECRET_KEY"))  ## only for test
         return "PotatoMail is running"
 
     return app
