@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Register - PotatoMail{% endblock %}
+
+{% block content %}
+<div class="auth-container" x-data="registerForm()">
+    <div class="auth-card">
+        <h1>Create Account</h1>
+        
+        <div x-show="error" class="alert alert-error" x-cloak>
+            <span x-text="error"></span>
+        </div>
+
+        <div x-show="success" class="alert alert-success" x-cloak>
+            <p>Account created successfully! <a href="{{ url_for('auth.login') }}">Login now</a></p>
+        </div>
+
+        <form @submit.prevent="handleRegister" x-show="!success" x-cloak>
+            <div class="form-group">
+                <label for="name">Name</label>
+                <input 
+                    type="text" 
+                    id="name" 
+                    x-model="name" 
+                    required
+                    placeholder="John Doe"
+                />
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    x-model="email" 
+                    required
+                    placeholder="your@email.com"
+                />
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    x-model="password" 
+                    required
+                    placeholder="••••••••"
+                />
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input 
+                    type="password" 
+                    id="confirm_password" 
+                    x-model="confirm_password" 
+                    required
+                    placeholder="••••••••"
+                />
+            </div>
+
+            <button type="submit" class="btn btn-primary" :disabled="loading">
+                <span x-show="!loading">Create Account</span>
+                <span x-show="loading">Creating...</span>
+            </button>
+        </form>
+
+        <p class="auth-link">
+            Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a>
+        </p>
+    </div>
+</div>
+
+<script>
+    function registerForm() {
+        return {
+            name: '',
+            email: '',
+            password: '',
+            confirm_password: '',
+            error: '',
+            success: false,
+            loading: false,
+
+            async handleRegister() {
+                this.error = '';
+
+                if (!this.name.trim()) {
+                    this.error = 'Name is required';
+                    return;
+                }
+
+                if (this.password !== this.confirm_password) {
+                    this.error = 'Passwords do not match';
+                    return;
+                }
+
+                if (this.password.length < 8) {
+                    this.error = 'Password must be at least 8 characters';
+                    return;
+                }
+
+                this.loading = true;
+
+                try {
+                    const response = await fetch('{{ url_for("auth.register") }}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name: this.name,
+                            email: this.email,
+                            password: this.password
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        this.error = data.error || 'Registration failed';
+                        this.loading = false;
+                        return;
+                    }
+
+                    this.success = true;
+                } catch (err) {
+                    this.error = 'Network error. Please try again.';
+                    this.loading = false;
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}

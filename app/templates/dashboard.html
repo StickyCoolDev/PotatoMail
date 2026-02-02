@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - PotatoMail{% endblock %}
+
+{% block content %}
+<div class="dashboard-container" x-data="dashboard()" x-init="init()">
+    <div class="dashboard-header">
+        <h1>API Keys Dashboard</h1>
+        <p>Manage your API keys for programmatic access</p>
+    </div>
+
+    <div x-show="error" class="alert alert-error" x-cloak>
+        <span x-text="error"></span>
+    </div>
+
+    <div x-show="success" class="alert alert-success" x-cloak>
+        <span x-text="success"></span>
+    </div>
+
+    <!-- User Info Section -->
+    <section class="dashboard-section">
+        <h2>Account Information</h2>
+        <div class="user-info">
+            <div class="info-item">
+                <span class="label">Name:</span>
+                <span class="value" x-text="user.name || 'Loading...'"></span>
+            </div>
+            <div class="info-item">
+                <span class="label">Email:</span>
+                <span class="value" x-text="user.email || 'Loading...'"></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- API Keys Section -->
+    <section class="dashboard-section">
+        <div class="section-header">
+            <h2>API Keys</h2>
+            <button class="btn btn-primary" @click="showNewKeyForm = true">+ Create New Key</button>
+        </div>
+
+        <!-- New Key Form -->
+        <div x-show="showNewKeyForm" class="form-card" x-cloak>
+            <h3>Create New API Key</h3>
+            <form @submit.prevent="createKey">
+                <div class="form-group">
+                    <label for="key_name">Key Name</label>
+                    <input 
+                        type="text" 
+                        id="key_name" 
+                        x-model="newKeyName" 
+                        required
+                        placeholder="e.g., Production, Development"
+                    />
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" :disabled="creatingKey">
+                        <span x-show="!creatingKey">Create Key</span>
+                        <span x-show="creatingKey">Creating...</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" @click="showNewKeyForm = false">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- New Key Display -->
+        <div x-show="newKeyData" class="alert alert-info" x-cloak>
+            <div class="key-display">
+                <p><strong>Your API Key:</strong></p>
+                <div class="key-value-container">
+                    <code class="key-value" x-text="newKeyData.key"></code>
+                    <button class="btn btn-sm btn-secondary" @click="copyKey(newKeyData.key)">
+                        Copy
+                    </button>
+                </div>
+                <p class="warning">Save this key in a safe place. You won't be able to see it again!</p>
+                <button class="btn btn-secondary" @click="newKeyData = null">Done</button>
+            </div>
+        </div>
+
+        <!-- API Keys List -->
+        <div x-show="keys.length > 0" class="keys-list" x-cloak>
+            <div class="keys-table">
+                <div class="table-header">
+                    <div class="col col-name">Name</div>
+                    <div class="col col-key">Key</div>
+                    <div class="col col-date">Created</div>
+                    <div class="col col-status">Status</div>
+                    <div class="col col-action">Action</div>
+                </div>
+                <template x-for="key in keys" :key="key.$id">
+                    <div class="table-row">
+                        <div class="col col-name" x-text="key.name"></div>
+                        <div class="col col-key">
+                            <code x-text="key.key"></code>
+                        </div>
+                        <div class="col col-date" x-text="formatDate(key.created_at)"></div>
+                        <div class="col col-status">
+                            <span class="status" :class="'status-' + key.status" x-text="key.status"></span>
+                        </div>
+                        <div class="col col-action">
+                            <button 
+                                class="btn btn-sm btn-danger" 
+                                @click="revokeKey(key.$id)"
+                                x-show="key.status === 'active'"
+                            >
+                                Revoke
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <div x-show="keys.length === 0 && !loading" class="empty-state" x-cloak>
+            <p>No API keys yet. Create one to get started!</p>
+        </div>
+    </section>
+
+    <!-- Integration Guide Section -->
+    <section class="dashboard-section">
+        <h2>How to Use Your API Key</h2>
+        <div class="integration-guide">
+            <p>Include your API key in the <code>X-API-Key</code> header when making requests:</p>
+            <pre><code>curl -X POST https://your-domain.com/send_email \
+  -H "X-API-Key: YOUR_API_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "receiver_email": "recipient@example.com",
+    "subject": "Hello",
+    "message": "Your message here"
+  }'</code></pre>
+        </div>
+    </section>
+</div>
+
+<script>
+    function dashboard() {
+        return {
+            user: {},
+            keys: [],
+            newKeyName: '',
+            newKeyData: null,
+            showNewKeyForm: false,
+            error: '',
+            success: '',
+            loading: true,
+            creatingKey: false,
+
+            async init() {
+                await Promise.all([this.loadUser(), this.loadKeys()]);
+                this.loading = false;
+            },
+
+            async loadUser() {
+                try {
+                    const response = await fetch('{{ url_for("auth.get_user") }}');
+                    if (response.ok) {
+                        this.user = await response.json();
+                    }
+                } catch (err) {
+                    console.error('Failed to load user:', err);
+                }
+            },
+
+            async loadKeys() {
+                try {
+                    const response = await fetch('{{ url_for("auth.get_api_keys") }}');
+                    if (response.ok) {
+                        
+                        this.keys = await response.json();
+                        cosnole.log(this.keys);
+                    }
+                } catch (err) {
+                    this.error = 'Failed to load API keys';
+                }
+            },
+
+            async createKey() {
+                this.error = '';
+                this.success = '';
+                this.creatingKey = true;
+
+                try {
+                    const response = await fetch('{{ url_for("auth.create_api_key") }}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: this.newKeyName })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        this.error = data.error || 'Failed to create key';
+                        this.creatingKey = false;
+                        return;
+                    }
+
+                    this.newKeyData = data;
+                    this.newKeyName = '';
+                    this.showNewKeyForm = false;
+                    await this.loadKeys();
+                } catch (err) {
+                    this.error = 'Network error. Please try again.';
+                }
+                this.creatingKey = false;
+            },
+
+            async revokeKey(keyId) {
+                if (!confirm('Are you sure you want to revoke this key?')) return;
+
+                this.error = '';
+                this.success = '';
+
+                try {
+                    const response = await fetch(`{{ url_for("auth.revoke_api_key", key_id="") }}${keyId}`, {
+                        method: 'DELETE'
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        this.error = data.error || 'Failed to revoke key';
+                        return;
+                    }
+
+                    this.success = 'API key revoked successfully';
+                    await this.loadKeys();
+                } catch (err) {
+                    this.error = 'Network error. Please try again.';
+                }
+            },
+
+            copyKey(key) {
+                navigator.clipboard.writeText(key).then(() => {
+                    this.success = 'Key copied to clipboard!';
+                    setTimeout(() => this.success = '', 3000);
+                });
+            },
+
+            formatDate(dateStr) {
+                return new Date(dateStr).toLocaleDateString();
+            }
+        }
+    }
+</script>
+{% endblock %}
