@@ -1,8 +1,7 @@
 from flask import Flask
 import sys
 import os
-
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.getcwd())
 from dotenv import load_dotenv
 
 from lib.mail.view import email_bp
