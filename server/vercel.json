@@ -1,5 +1,11 @@
 {
-  "env" : {
-    "PYTHONPATH" : "."
+  "builds": [
+    {
+      "src": "main.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "env": {
+    "PYTHONPATH": "."
   }
 }
