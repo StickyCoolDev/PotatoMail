@@ -1,0 +1,44 @@
+name: Publish Python package (uv → PyPI)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Build & publish to PyPI
+    runs-on: ubuntu-latest
+
+    # Extra safety: only run on the canonical repo
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install uv (Python 3.12)
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: '3.12'
+          enable-cache: true
+
+      - name: Verify uv installation
+        run: uv --version
+
+      - name: Build distributions
+        working-directory: ./python_package
+        run: |
+          uv build --no-sources --sdist --wheel
+
+      - name: Inspect dist folder
+        working-directory: ./python_package
+        run: ls -la dist
+
+      - name: Publish to PyPI
+        working-directory: ./python_package
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          uv publish

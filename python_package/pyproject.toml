@@ -1,0 +1,16 @@
+[project]
+name = "potato-mail"
+version = "0.1.0"
+description = "The official python SDK for PotatoMail."
+readme = "README.md"
+authors = [
+    { name = "StickyCoolDev", email = "hujifa.info@gmaill.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "requests>=2.32.5",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.15,<0.10.0"]
+build-backend = "uv_build"
