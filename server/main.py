@@ -1,4 +1,4 @@
-from lib.mail.view import email_bp
+from .lib.mail.view import email_bp
 from flask import Flask
 
 from dotenv import load_dotenv
