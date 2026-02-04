@@ -3,13 +3,13 @@ import smtplib
 from email.message import EmailMessage
 from flask import Blueprint, request, jsonify
 
-# 1. Import your Appwrite function
+# 1. Import your database function
 from dotenv import load_dotenv # <--- 1. Import this
 
 load_dotenv() #
 email_bp = Blueprint('email_bp', __name__)
 
-from lib.appwrite import create_new_email 
+from lib.db.repository import create_new_email 
 API_KEY = os.getenv('API_AUTH_KEY')
 SENDER_EMAIL = os.getenv('SENDER_EMAIL')
 SENDER_PASSWORD = os.getenv('SENDER_PASSWORD')
@@ -59,7 +59,7 @@ def handle_send_email():
             body_html=body_html
         )
 
-        # 3. If SMTP succeeds, write to Appwrite Database
+        # 3. If SMTP succeeds, write to Database
         # Note: Your create_new_email function has its own try/except, 
         # so it won't crash the request if the DB is momentarily down.
         create_new_email(
